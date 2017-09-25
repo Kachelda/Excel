@@ -17,40 +17,70 @@ namespace Excel.ExcelData
         public ExcelAnalog()
         {
             InitBoard();
+            Board.RunBoard();
+            PrintBoard();
         }
 
         public void InitBoard()
         {
-            Console.WriteLine("Введите первую строку");
-            string line = Console.ReadLine();
-            string[] listStrings = line.Split('\t');
-
-            CountOfRows = Convert.ToInt32(listStrings[0]);
-            CountOfColumns = Convert.ToInt32(listStrings[1]);
-
+            bool correctInput = false;
+            while (!correctInput)
+            {
+                Console.WriteLine("Введите количество строк и столбцов");
+                string line = Console.ReadLine();
+                string[] listStrings = line.Split('\t');
+                if (listStrings.Length == 2)
+                {
+                    if (Int32.TryParse(listStrings[0], out int rowsResult) && rowsResult > 0 &&
+                        Int32.TryParse(listStrings[1], out int columnsResult) && columnsResult > 0)
+                    {
+                        CountOfRows = rowsResult;
+                        CountOfColumns = columnsResult;
+                        correctInput = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Ошибка! Повторите ввод!");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Ошибка! Повторите ввод!");
+                }
+            }
+            
             List<string> list = new List<string>();
 
-            Console.WriteLine("Введите элементы первой строки");
-            string line1 = Console.ReadLine();
-            string[] listElements1 = line1.Split('\t');
-
-            foreach (string str in listElements1)
+            while (correctInput)
             {
-                list.Add(str);
-            }
+                for (int i = 1; i <= CountOfRows; i++)
+                {
+                    Console.WriteLine("Введите элементы {0} строки", i);
+                    string lineRow = Console.ReadLine();
+                    string[] arrayStrings = lineRow.Split('\t');
 
-            Console.WriteLine("Введите элементы второй строки");
-            string line2 = Console.ReadLine();
-            string[] listElements2 = line2.Split('\t');
-
-            foreach (string str in listElements2)
-            {
-                list.Add(str);
+                    if (arrayStrings.Length == CountOfColumns)
+                    {
+                        foreach (string str in arrayStrings)
+                        {
+                            list.Add(str);
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Ошибка! Повторите ввод!");
+                        i--;
+                    }
+                }
+                correctInput = false;
             }
 
             Board = new Board(CountOfRows, CountOfColumns);
             Board.Initialization(list);
+        }
 
+        public void PrintBoard()
+        {
             ConsoleOutput Output = new ConsoleOutput();
             Console.WriteLine();
             Output.PrintTwoDimensional(Board);

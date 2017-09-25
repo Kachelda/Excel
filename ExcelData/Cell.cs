@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,5 +18,64 @@ namespace Excel.ExcelData
             Data = data;
             CurrentPosition = currentPosition;
         }
+
+        public bool EmptyCell(string str)
+        {
+            if (str.Length == 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool CellWithText(string str)
+        {
+            char str1 = '\'';
+
+            int IndexOfChar = str.IndexOf(str1);
+
+            if (IndexOfChar == 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool CellWithNumbers(string str)
+        {
+            var number = 0;
+            if (Int32.TryParse(str, out number) && number > 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool CellWithFormula(string str)
+        {
+            char str1 = '=';
+
+            int IndexOfChar = str.IndexOf(str1);
+
+            if (IndexOfChar == 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        
     }
 }
