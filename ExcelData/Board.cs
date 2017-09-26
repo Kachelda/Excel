@@ -90,12 +90,15 @@ namespace Excel.ExcelData
             string str = cell.Data.Substring(1);
 
             str = str + ')';
-            Stack<int> Operands = new Stack<int>();
-            Stack<char> Functions = new Stack<char>();
+            Stack<int> operands = new Stack<int>();
+            Stack<char> functions = new Stack<char>();
+            List<Cell> repeatableCells = new List<Cell>();
             int errorInput = 1000;
             int position = 0;
             object token;
             object prevToken = 'Ы';
+
+            repeatableCells.Add(cell);
 
             do
             {
@@ -104,29 +107,28 @@ namespace Excel.ExcelData
                 if (token is char && prevToken is char &&
                     ((char)token == '+' || (char)token == '-'))
                 {
-                    Operands.Push(0);
+                    operands.Push(0);
                 }
 
                 if (token is char && prevToken is char &&
                     ((char)token == '*' || (char)token == '/'))
                 {
-                    Operands.Push(1);
+                    operands.Push(1);
                 }
 
                 if (token is int)
                 {
                     if ((char)prevToken >= 'A' && (char)prevToken <= 'Z')
                     {
-                        if (cell.CurrentPosition.X == (char) prevToken && cell.CurrentPosition.Y == (int) token)
+                        if (GetRepeatTime(repeatableCells, (char)prevToken, (int)token))
                         {
                             return errorInput;
-                            break;
                         }
-                        Operands.Push(GetValuePosition((char)prevToken, (int)token));
+                        operands.Push(GetValuePosition((char)prevToken, (int)token));
                     }
                     else
                     {
-                        Operands.Push((int)token);
+                        operands.Push((int)token);
                     }
                 }
 
@@ -134,9 +136,9 @@ namespace Excel.ExcelData
                 {
                     if ((char)token == ')')
                     {
-                        while (Functions.Count > 0)
+                        while (functions.Count > 0)
                         {
-                            PopFunction(Operands, Functions);
+                            PopFunction(operands, functions);
                         }
                     }
                     if ((char)token >= 'A' && (char)token <= 'Z')
@@ -144,44 +146,44 @@ namespace Excel.ExcelData
                         prevToken = token;
                         continue;
                     }
-                    if (Functions.Count > 0)
+                    if (functions.Count > 0)
                     {
-                        PopFunction(Operands, Functions);
+                        PopFunction(operands, functions);
                     }
                     if ((char)token == '+' || (char)token == '-' || (char)token == '*' || (char)token == '/')
                     {
-                        Functions.Push((char)token);
+                        functions.Push((char)token);
                     }
                 }
                 prevToken = token;
             }
             while (token != null);
 
-            if (Operands.Count > 1 || Functions.Count > 0)
+            if (operands.Count > 1 || functions.Count > 0)
             {
                 throw new Exception("Ошибка в разборе выражения");
             }
 
-            return Operands.Pop();
+            return operands.Pop();
         }
 
-        public void PopFunction(Stack<int> Operands, Stack<char> Functions)
+        public void PopFunction(Stack<int> operands, Stack<char> functions)
         {
-            int B = Operands.Pop();
-            int A = Operands.Pop();
-            switch (Functions.Pop())
+            int b = operands.Pop();
+            int a = operands.Pop();
+            switch (functions.Pop())
             {
                 case '+':
-                    Operands.Push(A + B);
+                    operands.Push(a + b);
                     break;
                 case '-':
-                    Operands.Push(A - B);
+                    operands.Push(a - b);
                     break;
                 case '*':
-                    Operands.Push(A * B);
+                    operands.Push(a * b);
                     break;
                 case '/':
-                    Operands.Push(A / B);
+                    operands.Push(a / b);
                     break;
             }
         }
@@ -241,7 +243,19 @@ namespace Excel.ExcelData
                 }
             }
             return value;
+        }
 
+        public bool GetRepeatTime(List<Cell> cells, char prevToken, int token) 
+        {
+            foreach (Cell cell in cells)
+            {
+                if (cell.CurrentPosition.X == prevToken &&
+                    cell.CurrentPosition.Y == token)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }
