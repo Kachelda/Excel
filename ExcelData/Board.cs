@@ -6,6 +6,12 @@ using System.Threading.Tasks;
 
 namespace Excel.ExcelData
 {
+    enum TokenValueType
+    {
+        Default,
+        IntTypeToken,
+        CharTypeToken
+    }
     class Board
     {
         public int CountOfRows { get; set; }
@@ -68,18 +74,19 @@ namespace Excel.ExcelData
                     }
                     else if (cell.CellWithFormula(cell.Data))
                     {
-                        if (RunCellWithFormula(cell) == 1000)
-                        {
-                            cell.Data = "#Error";
-                        }
-                        else
+                        try
                         {
                             cell.Data = RunCellWithFormula(cell).ToString();
                         }
+                        catch (Exception e)
+                        {
+                            cell.Data = e.Message;
+                        }
+                        
                     }
                     else
                     {
-                        cell.Data = "#Error";
+                        cell.Data = "# Ошибка ввода";
                     }
                 }
             }
@@ -87,77 +94,73 @@ namespace Excel.ExcelData
 
         public int RunCellWithFormula(Cell cell)
         {
-            string str = cell.Data.Substring(1);
+            string stringFormula = cell.Data.Substring(1);
 
-            str = str + ')';
             Stack<int> operands = new Stack<int>();
             Stack<char> functions = new Stack<char>();
             List<Cell> repeatableCells = new List<Cell>();
-            int errorInput = 1000;
+            
             int position = 0;
-            object token;
-            object prevToken = 'Ы';
+            TokenValueType token;
+            char prevToken = '\0';
 
             repeatableCells.Add(cell);
 
             do
             {
-                token = GetToken(str, ref position);
-
-                if (token is char && prevToken is char &&
-                    ((char)token == '+' || (char)token == '-'))
+                if (functions.Count == operands.Count - 1 && functions.Count > 0)
                 {
-                    operands.Push(0);
+                    PopFunction(operands, functions);
                 }
 
-                if (token is char && prevToken is char &&
-                    ((char)token == '*' || (char)token == '/'))
-                {
-                    operands.Push(1);
-                }
+                token = GetToken(stringFormula, ref position);
 
-                if (token is int)
+                switch (token)
                 {
-                    if ((char)prevToken >= 'A' && (char)prevToken <= 'Z')
-                    {
-                        if (GetRepeatTime(repeatableCells, (char)prevToken, (int)token))
-                        {
-                            return errorInput;
-                        }
-                        operands.Push(GetValuePosition((char)prevToken, (int)token));
-                    }
-                    else
-                    {
-                        operands.Push((int)token);
-                    }
-                }
+                        case TokenValueType.CharTypeToken:
 
-                else if (token is char)
-                {
-                    if ((char)token == ')')
-                    {
-                        while (functions.Count > 0)
-                        {
-                            PopFunction(operands, functions);
-                        }
-                    }
-                    if ((char)token >= 'A' && (char)token <= 'Z')
-                    {
-                        prevToken = token;
-                        continue;
-                    }
-                    if (functions.Count > 0)
-                    {
-                        PopFunction(operands, functions);
-                    }
-                    if ((char)token == '+' || (char)token == '-' || (char)token == '*' || (char)token == '/')
-                    {
-                        functions.Push((char)token);
-                    }
+                            var tokenChar = ReadChar(stringFormula, ref position);
+
+                            if (tokenChar >= 'A' && tokenChar <= 'Z')
+                            {
+                                prevToken = tokenChar;
+                                continue;
+                            }
+                            else if (tokenChar == '+' || tokenChar == '-' || tokenChar == '*' || tokenChar == '/')
+                            {
+                                functions.Push(tokenChar);
+                            }
+                            else
+                            {
+                                throw new Exception("# Ошибка ввода");
+                            }
+                        break;
+
+                        case TokenValueType.IntTypeToken:
+
+                            var tokenInt = Convert.ToInt32(ReadInt(stringFormula, ref position));
+
+                            if (prevToken >= 'A' && prevToken <= 'Z')
+                            {
+                                if (GetRepeatTime(repeatableCells, prevToken, tokenInt))
+                                {
+                                    throw new Exception("Ссылка на самого себя");
+                                }
+                                operands.Push(GetValuePosition(prevToken, tokenInt));
+                                prevToken = '\0';
+                            }
+                            else
+                            {
+                                operands.Push(tokenInt);
+                            }
+                        break;
+
+                        case TokenValueType.Default:
+                        break;
                 }
-                prevToken = token;
+               
             }
-            while (token != null);
+            while (token != TokenValueType.Default);
 
             if (operands.Count > 1 || functions.Count > 0)
             {
@@ -188,39 +191,38 @@ namespace Excel.ExcelData
             }
         }
 
-        public object GetToken(string s, ref int position)
+        public TokenValueType GetToken(string stringFormula, ref int position)
         {
-            ReadWhiteSpace(s, ref position);
-
-            if (position == s.Length)
-                return null;
-            if (char.IsDigit(s[position]))
-                return Convert.ToInt32(ReadInt(s, ref position));
+            if (position == stringFormula.Length)
+            {
+                return TokenValueType.Default;
+            }
+            if (char.IsDigit(stringFormula[position]))
+            {
+                return TokenValueType.IntTypeToken; 
+            }
             else
-                return ReadChar(s, ref position);
+            {
+                return TokenValueType.CharTypeToken;
+            }
         }
 
-        private static char ReadChar(string s, ref int position)
+        private char ReadChar(string stringFormula, ref int position)
         {
-            return s[position++];
+            return stringFormula[position++];
         }
 
-        public string ReadInt(string s, ref int position)
+        public string ReadInt(string stringFormula, ref int position)
         {
             string res = "";
-            while (position < s.Length && char.IsDigit(s[position]))
-                res += s[position++];
-
+            while (position < stringFormula.Length && char.IsDigit(stringFormula[position]))
+            {
+                res += stringFormula[position++];
+            }
             return res;
         }
 
-        public void ReadWhiteSpace(string s, ref int position)
-        {
-            while (position < s.Length && char.IsWhiteSpace(s[position]))
-                position++;
-        }
-
-        public int GetValuePosition(char prevToken, int token)
+       public int GetValuePosition(char prevToken, int token)
         {
             int value = 0;
 

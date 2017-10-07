@@ -63,7 +63,8 @@ namespace Excel.ExcelData
                     {
                         foreach (string str in arrayStrings)
                         {
-                            list.Add(str);
+                            string str1 = str.Replace(" ", string.Empty);
+                            list.Add(str1);
                         }
                     }
                     else
@@ -81,9 +82,9 @@ namespace Excel.ExcelData
 
         public void PrintBoard()
         {
-            ConsoleOutput Output = new ConsoleOutput();
+            ConsoleOutput output = new ConsoleOutput();
             Console.WriteLine();
-            Output.PrintTwoDimensional(Board);
+            output.PrintTwoDimensional(Board);
 
             Console.ReadLine();
         }

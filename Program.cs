@@ -10,8 +10,17 @@ namespace Excel
     {
         static void Main(string[] args)
         {
-            new ExcelData.ExcelAnalog();
+            try
+            {
+                new ExcelData.ExcelAnalog();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+              
+            }
 
+            Console.ReadLine();
         }
     }
 }

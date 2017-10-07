@@ -35,9 +35,9 @@ namespace Excel.ExcelData
         {
             char str1 = '\'';
 
-            int IndexOfChar = str.IndexOf(str1);
+            int indexOfChar = str.IndexOf(str1);
 
-            if (IndexOfChar == 0)
+            if (indexOfChar == 0)
             {
                 return true;
             }
@@ -64,9 +64,9 @@ namespace Excel.ExcelData
         {
             char str1 = '=';
 
-            int IndexOfChar = str.IndexOf(str1);
+            int indexOfChar = str.IndexOf(str1);
 
-            if (IndexOfChar == 0)
+            if (indexOfChar == 0)
             {
                 return true;
             }
